@@ -47,6 +47,9 @@ if (!isset($action['version']) || $action['version'] != 3) {
   civiproxy_rest_error("API 'version' information missing.");
 }
 
+// Convert action to strolower to make the check case insesntive.
+$action['action'] = strtolower($action['action']);
+
 // in release 0.4, allowed entity/actions per IP were introduced. To introduce backward compatibility,
 // the previous test is still used when no 'all' key is found in the array
 if (isset($rest_allowed_actions['all'])) {
