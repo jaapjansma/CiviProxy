@@ -96,7 +96,7 @@ function civiproxy_redirect($url_requested, $parameters) {
  *  so they will point to this proxy instead
  */
 function civiproxy_mend_URLs(&$string) {
-  global $target_rest, $target_url, $target_open, $target_file, $target_mail, $proxy_base, $target_mosaico;
+  global $target_rest, $target_url, $target_open, $target_file, $target_mail, $proxy_base, $target_mosaico, $target_civicrm;
 
   if ($target_rest) {
     $string = preg_replace("#{$target_rest}#", $proxy_base . '/rest.php', $string);
@@ -112,11 +112,16 @@ function civiproxy_mend_URLs(&$string) {
   }
   if ($target_file) {
     $string = preg_replace("#{$target_file}#", $proxy_base . '/file.php?id=', $string);
+    // https://github.com/systopia/CiviProxy/issues/38
+    // fix for relative
+    if ($target_mosaico) {
+      $string = preg_replace("#src=\"\/sites\/default\/files\/civicrm\/persist\/#", 'src="' . $proxy_base . '/file.php?id=', $string);
+    }
   }
   if ($target_mosaico) {
     // replace full, and relative URL
-    $string = preg_replace("#{$target_mosaico}#",           $proxy_base . '/mosaico.php?id=', $string);
-    $string = preg_replace("#/civicrm/mosaico/img\\?src=#", $proxy_base . '/mosaico.php?id=', $string);
+    // $string = preg_replace("#{$target_mosaico}#",           $proxy_base . '/mosaico.php?id=', $string);
+    $string = preg_replace("#{$target_civicrm}/civicrm/mosaico/img\?src=#", $proxy_base . '/mosaico.php?id=', $string);
   }
 }
 
@@ -197,7 +202,6 @@ function civiproxy_get_parameters($valid_parameters, $request = NULL) {
       $result[$name] = civiproxy_sanitise($request[$name], $type);
     }
   }
-
   // process wildcard elements
   if ($default_sanitation !== NULL) {
     // i.e. we want the others too
@@ -232,7 +236,7 @@ function civiproxy_sanitise($value, $type) {
     }
   } elseif ($type == 'email') {
     // valid email
-    if (!preg_match("#^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$#i", $value)) {
+    if (!preg_match("#^[_a-z0-9-]+[._a-z0-9-+]*@[a-z0-9-]+[.a-z0-9-]*\.[a-z]{2,3}$#i", $value)) {
       error_log("CiviProxy: removed invalid email parameter: " . $value);
       $value = '';
     }
@@ -336,7 +340,7 @@ function civiproxy_get_valid_allowed_actions_key($action, $rest_allowed_actions)
   $remote_addr = $_SERVER['REMOTE_ADDR'];
   // check IP specific whitelisting if specified for this address
   if (isset($rest_allowed_actions[$remote_addr])) {
-    if (isset($rest_allowed_actions[$remote_addr][$action['entity']]) && isset($rest_allowed_actions[$remote_addr][$action['entity']][$action['action']])) {
+    if (civiproxy_validate_api_entity_and_action($remote_addr, $action['entity'], $action['action'], $rest_allowed_actions)) {
       $valid_key = $remote_addr;
     } else {
       $valid_key = 'all';
@@ -345,5 +349,83 @@ function civiproxy_get_valid_allowed_actions_key($action, $rest_allowed_actions)
     $valid_key = 'all';
   }
   return $valid_key;
+}
+
+/**
+ * Function to check whether the api entity and api action are valid for the remote address.
+ * This function does a case insensitive comparison.
+ *
+ * @param $remote_addr
+ *   'all', or the remote address.
+ * @param $api_entity
+ *   The api entity.
+ * @param $api_action
+ *   The api action.
+ * @param $rest_allowed_actions
+ *   The array with the allowed actions.
+ * @return bool
+ */
+function civiproxy_validate_api_entity_and_action($remote_addr, $api_entity, $api_action, $rest_allowed_actions) {
+  if (!isset($rest_allowed_actions[$remote_addr])) {
+    return false;
+  }
+
+  $api_entity = strtolower($api_entity);
+  $api_action = strtolower($api_action);
+  if (isset($rest_allowed_actions[$remote_addr][$api_entity]) && isset($rest_allowed_actions[$remote_addr][$api_entity][$api_action])) {
+    return true;
+  }
+
+  // Did not find the lower case variant.
+  // loop through the array
+  foreach($rest_allowed_actions[$remote_addr] as $allowed_entity => $allowed_actions) {
+    if (strtolower($allowed_entity) == $api_entity) {
+      foreach($allowed_actions as $allowed_action => $fields) {
+        if (strtolower($allowed_action) == $api_action) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Function to retrieve the valid parameters of an api call
+ * This function does a case insensitive comparison.
+ *
+ * @param $remote_addr
+ *   'all', or the remote address.
+ * @param $api_entity
+ *   The api entity.
+ * @param $api_action
+ *   The api action.
+ * @param $rest_allowed_actions
+ *   The array with the allowed actions.
+ * @return array()|null
+ **/
+function civiproxy_retrieve_api_parameters($remote_addr, $api_entity, $api_action, $rest_allowed_actions) {
+  if (!isset($rest_allowed_actions[$remote_addr])) {
+    return null;
+  }
+
+  $api_entity = strtolower($api_entity);
+  $api_action = strtolower($api_action);
+  if (isset($rest_allowed_actions[$remote_addr][$api_entity]) && isset($rest_allowed_actions[$remote_addr][$api_entity][$api_action])) {
+    return $rest_allowed_actions[$remote_addr][$api_entity][$api_action];
+  }
+
+  // Did not find the lower case variant.
+  // loop through the array
+  foreach($rest_allowed_actions[$remote_addr] as $allowed_entity => $allowed_actions) {
+    if (strtolower($allowed_entity) == $api_entity) {
+      foreach($allowed_actions as $allowed_action => $parameters) {
+        if (strtolower($allowed_action) == $api_action) {
+          return $parameters;
+        }
+      }
+    }
+  }
+  return null;
 }
 
