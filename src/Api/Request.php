@@ -28,9 +28,15 @@ class Request {
     $this->request = $request;
     $this->files = $files;
     $this->server = $server;
+    foreach(getallheaders() as $header => $headerValue) {
+      $this->headers[$header] = $headerValue;
+    }
     foreach ($server as $header => $headerValue) {
       if (stripos($header, 'HTTP_') === 0) {
-        $this->headers[substr($header, 5)] = $headerValue;
+        $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($header, 5)))));
+        if (!isset($this->headers[$key])) {
+          $this->headers[$key] = $headerValue;
+        }
       }
     }
     $this->cookies = $cookies;
