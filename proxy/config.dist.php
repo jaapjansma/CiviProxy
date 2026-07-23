@@ -283,6 +283,7 @@ $_webhook2api = [
               "enable" => FALSE, // SET to TRUE to enable verification of the request against a CiviCRM api.
               "entity" => "HmacSignature", // This is an API from the CiviHMAC extension (https://lab.civicrm.org/extensions/civihmac)
               "action" => "verify",
+              "version" => 3, // Only version 3 is supported
               "parameters" => ["provider" => "example"],
               "parameter_mapping" => [
                 [["HTTP_BODY"], ["body"]], // This will submit the body as string to CiviCRM
