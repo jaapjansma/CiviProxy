@@ -32,6 +32,9 @@ class Request {
     $this->request = $request;
     $this->files = $files;
     $this->server = $server;
+    // We use getallheaders because it could be that not
+    // all headers are set in $_SERVER.
+    // For example the Authorization header.
     foreach(getallheaders() as $header => $headerValue) {
       $this->headers[$header] = $headerValue;
     }
