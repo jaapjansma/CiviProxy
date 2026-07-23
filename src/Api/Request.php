@@ -23,6 +23,10 @@ class Request {
 
   public array $cookies = [];
 
+  public static function create(): Request {
+    return new Request($_GET, $_POST, $_FILES, $_SERVER, $_COOKIE);
+  }
+
   public function __construct(array $query, array $request = [], array $files = [], array $server = [], array $cookies = []) {
     $this->query = $query;
     $this->request = $request;

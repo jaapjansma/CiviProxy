@@ -104,7 +104,7 @@ function webhook2api_processConfiguration($configuration, $post_input) {
 
   // Verify request
   if (!empty($configuration['verify_request']) && !empty($configuration['verify_request']['enable'])) {
-    $request = new Request($_GET, $_POST, $_FILES, $_SERVER, $_COOKIE);
+    $request = Request::create();
     $request_is_valid = webhook2api_verifyRequest($configuration, $request, $post_input);
     if (!$request_is_valid) {
       // The verifcation of the request failed.
