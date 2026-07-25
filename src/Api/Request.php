@@ -24,7 +24,14 @@ class Request {
   public array $cookies = [];
 
   public static function create(): Request {
-    return new Request($_GET, $_POST, $_FILES, $_SERVER, $_COOKIE);
+    $request = new Request($_GET, $_POST, $_FILES, $_SERVER, $_COOKIE);
+    // We use getallheaders because it could be that not
+    // all headers are set in $_SERVER.
+    // For example the Authorization header.
+    foreach(getallheaders() as $header => $headerValue) {
+      $request->headers[$header] = $headerValue;
+    }
+    return $request;
   }
 
   public function __construct(array $query, array $request = [], array $files = [], array $server = [], array $cookies = []) {
@@ -32,12 +39,6 @@ class Request {
     $this->request = $request;
     $this->files = $files;
     $this->server = $server;
-    // We use getallheaders because it could be that not
-    // all headers are set in $_SERVER.
-    // For example the Authorization header.
-    foreach(getallheaders() as $header => $headerValue) {
-      $this->headers[$header] = $headerValue;
-    }
     foreach ($server as $header => $headerValue) {
       if (stripos($header, 'HTTP_') === 0) {
         $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($header, 5)))));
