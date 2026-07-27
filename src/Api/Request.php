@@ -41,10 +41,7 @@ class Request {
     $this->server = $server;
     foreach ($server as $header => $headerValue) {
       if (stripos($header, 'HTTP_') === 0) {
-        $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($header, 5)))));
-        if (!isset($this->headers[$key])) {
-          $this->headers[$key] = $headerValue;
-        }
+        $this->headers[$header] = $headerValue;
       }
     }
     $this->cookies = $cookies;

@@ -163,7 +163,7 @@ function webhook2api_processConfiguration($configuration, $post_input) {
   exit();
 }
 
-function webhook2api_verifyRequest(array $configuration, Request $request, string $post_input) {
+function webhook2api_verifyRequest(array $configuration, Request $request, string $post_input): bool {
   // compile API query
   $data['HTTP_HEADERS'] = $request->headers;
   $data['HTTP_BODY'] = $post_input;
@@ -178,7 +178,8 @@ function webhook2api_verifyRequest(array $configuration, Request $request, strin
       // set to target
       webhook2api_setValue($params, $target_path, $value);
     }
-  } else {
+  } 
+  else {
     return FALSE;
   }
 
