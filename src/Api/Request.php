@@ -41,7 +41,10 @@ class Request {
     $this->server = $server;
     foreach ($server as $header => $headerValue) {
       if (stripos($header, 'HTTP_') === 0) {
-        $this->headers[$header] = $headerValue;
+        //In $_SERVER the HTTP headers look like HTTP_CONTENT_LENGTH.
+        // We translate this to Content-Length
+        $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($header, 5)))));
+        $this->headers[$key] = $headerValue;
       }
     }
     $this->cookies = $cookies;
